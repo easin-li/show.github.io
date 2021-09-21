@@ -1,0 +1,289 @@
+/**
+ * 
+ *   插件的 初始化实现
+ * 
+ */
+
+$(function(){
+	initContent();
+	
+});
+
+function initContent(_box){
+	//if($("form").find("button[class*=submit-alert-btn]").size()>0){
+	//	$("form").find("button[class*=submit-alert-btn]").attr("disabled",false);
+	//}
+	//alert("a");
+	if(message!=''&&message!=null){
+		var ishow=false;
+		var json = ISS.jsonEval(message);
+		if($.cookie('messageCode')==null){
+			ishow=true;
+		}else{
+			//alert("1 --"+$.cookie('messageCode'));
+			if($.cookie('messageCode')!=json.messageCode){
+			ishow=true;
+			}
+		}
+			
+		if(ishow){
+			$("body").showMessage(json);
+			$.cookie('messageCode',json.messageCode,{expires:1});	
+			//alert("2 --"+$.cookie('messageCode'));
+		}
+		 
+	}
+	 
+	var $p = $(_box || document);
+	//模态窗口 自动 创建
+	if ($.fn.modals)$("[data-toggle=modal]",$p).modals();
+	
+	//工具提示
+	$('[data-toggle="tooltip"]',$p).tooltip() ;
+	
+	//静态弹出框
+	$('[data-toggle="popover"]',document).popover();  
+	$('[data-toggle="popover"]',parent.document).popover(); 
+	
+	// 初始化 全选 功能
+	if ($.fn.selectcAll)$("[selectGroup]").selectcAll($p);
+	
+	if ($.fn.selectcAll)$("[selectGroup]", parent.document).selectcAll($p);
+	
+	// 初始化 时间 控件
+	
+	 $("span[data-type='datePicker']").each(function(){
+		 $(this).click(function(){
+			 var el=$(this).attr("data-target");
+			 WdatePicker({skin:'twoer',el:el,dateFmt:$(this).attr('date-fmt')});
+		 });
+	 });
+	 
+	 $("span[data-type='datePicker']" , parent.document).each(function(){
+		 $(this).click(function(){
+			 var el=$(this).attr("data-target");
+			 window.parent.WdatePicker({skin:'twoer',el:el,dateFmt:$(this).attr('date-fmt')});
+		 });
+	 });
+	
+	
+	
+	
+	//form校验
+	if($.fn.formValidate) $("form").formValidate();
+	 
+	if($.fn.formValidate) $("form", parent.document).formValidate();
+	
+	//查找带回
+	$("[lookupgroup]", $p).each(function(){
+		$(this).click(function(event){
+			//add by zhangzongxiao 20151215 支持前置的业务判断
+			var precall = eval($(this).attr("prefix-call"));
+			if($.isFunction(precall)){
+				if(precall($(this))){
+					var multi = $(this).attr("multi");//支持多选的查找带回  Luo Liang 2015-09-23
+					if(eval(multi)){
+						$(this).modalsOpen(event,function(){
+							if ($.fn.bringMulti)$("[bring='multi']", parent.document).bringMulti();//弹出页面上的确定按钮必须要带 bring="multi" 属性
+						});
+					}else{
+						$(this).modalsOpen(event,function(){
+							if ($.fn.bringSelect)$("input[bringBack^='bring']", parent.document).bringSelect();
+						});
+					}
+				}
+			}else{
+				var multi = $(this).attr("multi");//支持多选的查找带回  Luo Liang 2015-09-23
+				if(eval(multi)){
+					$(this).modalsOpen(event,function(){
+						if ($.fn.bringMulti)$("[bring='multi']", parent.document).bringMulti();//弹出页面上的确定按钮必须要带 bring="multi" 属性
+					});
+				}else{
+					$(this).modalsOpen(event,function(){
+						if ($.fn.bringSelect)$("input[bringBack^='bring']", parent.document).bringSelect();
+					});
+				}
+			}
+			event.preventDefault();
+		});
+	});
+	
+	//若需要将带回的数据进行特殊处理（支持多选的查找带回）
+	$("[bringCall]", parent.document).bringMultiOfHandle();
+	
+	/*add by zhangzongxiao 2015/04/18 begin*/
+	$("a[data-validate]", $p).each(function(){
+		$(this).click(function(event){
+			var precall = eval($(this).attr("prefix-call"));
+			//add by Luoliang 2015-04-28 支持前置的业务判断
+			if($.isFunction(precall)){
+				if(precall($(this))){
+					$(this).executeEvent(event);
+				}
+			}else {
+				$(this).executeEvent(event);
+			}
+			event.preventDefault();
+		});
+	});
+	/*add by zhangzongxiao 2015/04/18 end*/
+	//查询
+	$("a[target=view]", $p).each(function(){
+		$(this).click(function(event){
+			$(this).modalsOpen(event);
+			event.preventDefault();
+		});
+	});
+	//添加
+	$("a[target=add]", $p).each(function(){
+		$(this).click(function(event){
+			$(this).modalsOpen(event);
+			event.preventDefault();
+		});
+	});
+	//修改
+	$("a[target=edit]", $p).each(function(){
+		$(this).click(function(event){
+			if($(this).editValidate()){
+				$(this).editEvent(event);
+			}
+			event.preventDefault();
+		});
+	});
+
+	//删除
+	 $("a[target^='del']", $p).each(function(){
+		$(this).click(function(event){
+			if($(this).delValidate()){
+				if(confirm("您确认要删除吗?")){
+					if($(this).attr("target")=="del"){
+						$(this).delEvent(event);
+					}else{
+						$(this).asyncDelEvent(event);
+					}
+				}else{
+					return false;
+				}
+			}
+			event.preventDefault();
+			return false;
+		});
+	 });
+	 
+		//删除
+	 $("a[target^='edits']", $p).each(function(){
+		 
+		$(this).click(function(event){
+			if($(this).delValidate()){
+				$(this).editsEvent(event);
+			}
+			event.preventDefault();
+			return false;
+		});
+	 });
+	 //取消
+	$("button[target=close]", $p).each(function(){
+		$(this).click(function(event){
+			window.location.href=document.referrer;
+			event.preventDefault();
+			return false;
+		});
+	 });
+	
+	$("button[target=goPage]", $p).each(function(){
+		$(this).click(function(event){ 
+			var $this = $(this);
+			var pageid = $this.attr("pageid");
+			turnPage($('#'+ pageid).val());
+			event.preventDefault();
+			return false;
+		});
+	});
+	//查找带回模态窗口分页
+	$("a[target=modalSearch]", $p).each(function(){
+		$(this).click(function(event){
+			var $url=$(this).attr("href");
+			var $form;
+			if($url){
+				$form=$(this).parents("body").find("form[target='modal'][action='"+$url.trim()+"']:first");
+			}else{
+				//$form=$(this).parents("body").find("form[target='modal']:first");
+				$form=$(this).parents("div[role='dialog']").first().find("form[target='modal']:first");
+			}
+			$form.find("input[name='pageNum']").val($(this).attr("pageno"));
+			handlerSub($form);
+			
+			event.preventDefault();
+			return false;
+		});
+	});
+	//模态窗口查询
+	$("button[type=button][target=modal]", $p).each(function(){
+		$(this).click(function(event){
+			var $form=$(this).parents("div[role='dialog']").first().find("form[target='modal']:first");
+			$form.find("input[name='pageNum']").val("1");
+			handlerSub($form);
+			
+			event.preventDefault();
+			return false;
+		});
+	});
+	
+	$("a[target='excel']",$p).each(function(){
+		$(this).click(function(event){
+			//$(this).text("Exce开始下载...");
+			var table = $(this).attr("table")||"table";
+			 var excelHead="";
+			 var $url = $(this).attr("href");
+			 //$(this).attr("disabled",true);
+			$(table).find("th").each(function(){
+				var $this=$(this);
+				var excel=$this.attr("excel");
+				if(excel){
+				 excelHead+=","+$this.attr("excel")+":"+$this.text();
+				}
+			});
+//		   $("body form[id='outExcel']").remove();
+			  var form = $("<form >");  
+			      form.attr('id', 'outExcel');   
+			      form.attr('method', 'post');
+			      var url=$url;
+			      if(url.indexOf("?")==-1){
+			    	  form.attr('action', $url+"?"+$("#searchForm").serialize());  
+			      }else{
+			    	  form.attr('action', $url+"&"+$("#searchForm").serialize());  
+			      }
+			      
+			     // alert($url+"?"+$("#searchForm").serialize());
+			      var input = $('<input>');  
+			      input.attr('type', 'hidden');  
+			      input.attr('name', 'excelTitle');  
+			      input.attr('value',excelHead);  
+			      $('body').append(form);  
+			      form.append(input);  
+			      form.submit();  
+
+			      event.preventDefault();
+		});
+	});
+	
+	$("label[target=advQuery]", $p).each(function(){
+		$(this).click(function(event){ 
+			var $this = $(this);
+			var iconid = $this.attr("iconid");
+			var advQueryDiv = $this.data("target");
+			if($('#' + advQueryDiv.substring(1)).hasClass('collapse in')) {
+				$('#' + iconid).removeClass('splashy-arrow_state_blue_expanded').addClass('splashy-arrow_state_blue_collapsed');
+				$('#advQueryFlag').val("0");
+			} else {
+				$('#' + iconid).removeClass('splashy-arrow_state_blue_collapsed').addClass('splashy-arrow_state_blue_expanded');
+				$('#advQueryFlag').val("1"); 
+			}
+		});
+	});
+}
+
+ 
+
+
+

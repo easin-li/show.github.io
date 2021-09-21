@@ -1,0 +1,106 @@
+(function($){
+    $.fn.modals = function(options){
+    	var opts = $.extend({},$.fn.modal.defaults,options);
+    	return this.each(function(index){
+    	  var $modal = $(this);
+    	  var $target=$modal.attr("data-target");
+    	  if(!$target){
+    		  $target="#blank_"+index;
+    		  $modal.attr("data-target",$target);
+    	  }
+    	  
+    	  var modalClass=$modal.attr("modalClass")||"";
+    	  var doc;     
+  		  if(window.top == window.self){  
+  			  doc=document;    
+  		  }else{  
+  			  doc=parent.document;  
+  		  } 
+  		  if($target)
+  		  if ($($target,doc).length==0){
+  			 $("body",doc) .append(
+				'<div class="modal hide modal-open '+modalClass+'" id="' + $target.replace('#', '') + '" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="false" data-backdrop="static">'
+					+ '<div class="modal-dialog modal-lg">'
+					+ '<div class="modal-content">'
+					+ '<div class="modal-body">'
+					+ '<div class="modal-header">'
+					+ '<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>'
+					+ '<h4 class="modal-title" id="exampleModalLabel">请等待</h4>'
+					+ '</div>' + '</div>'
+					+ '</div>' + '</div>'
+					+ '</div>');  
+  		  }
+    	});
+    };
+    $.fn.modalsClose=function(){
+    	return  this.each(function(){
+    		  var doc;   
+     		  if(window.top == window.self){  
+     			  doc=document;     
+     		  }else{  
+     			  doc=parent.document;  
+     		  }
+     		 $($(this),doc).modal('hide');
+     		 //$($(this),doc).css({display: "none"});
+    	});
+    };
+    $.fn.modalsOpen=function(e,callback){
+       	  var doc;   
+ 		  if(window.top == window.self){  
+ 			  doc=document;     
+ 		  }else{  
+ 			  doc=parent.document;  
+ 		  } 
+ 		  var ajaxbg = $("#background,#progressBar",parent.document);
+ 		  var $this= $(this);
+ 		  //console.log("See what in this object:" + $this.is('a'));
+ 		  var look=$this.attr('lookupgroup'); 
+ 		  var $target = $this.attr('data-target') || "_blank"; // strip for ie7
+ 		  //var option  = $($target).data('bs.modal') ? 'toggle' : $.extend({ remote: !/#/.test(href) && href }, $($target).data(), $this.data());
+ 		  var date= new Date().getTime();
+ 		  if ($this.is('a')) {
+ 			  var href= $this.replaceTmById();
+ 			 //
+ 	 		  if(href.indexOf("?")>0){
+ 	 			 href+="&time="+date;
+ 	 		  }else{
+ 	 			 href+="?time="+date;
+ 	 		  }
+ 	 		  $($target,doc).modal({
+ 					  keyboard: false,
+ 					  show:true,
+ 					  remote:href
+ 			  });
+ 			  e.preventDefault();
+ 		  }
+ 		  
+		 
+		 
+ 		 
+ 		  $($target,doc).one('show.bs.modal', function (showEvent) { 
+ 			 if(!$(this).hasClass("hide") ){
+ 				$(this).addClass("hide");
+ 			 }
+ 			 ajaxbg.show();
+ 		  });
+ 		 
+ 	      if(look){$($target,doc).attr("lookupgroup",look);};
+ 	      $($target,doc).one('loaded.bs.modal', function (showEvent) {
+ 			  ajaxbg.hide();
+ 			  $(this).removeClass("hide");
+ 			  // 重新绑定 load 出的html内容
+ 			  initContent(parent.document);
+ 			  if ($.isFunction(callback))callback();
+ 			  $($target,doc).css({"overflow-y": "auto"});
+ 			  // 计算遮罩层高度  当弹出内容较少时 可能遮罩不全
+ 			  var heig=$(window).height() + 50; 
+// 			  var heig=$(parent.document.body).height(); 
+ 			  //var dialHei= $($target+" > .modal-dialog" ,doc).height()+300;
+ 			 $($target+" > .modal-backdrop" ,doc).css({height:heig });
+	 	  });
+	 	  $($target,doc).on("hidden.bs.modal", function() {
+	 	    	$(this).removeData("bs.modal");
+	 	  });
+	 	
+    };
+})(jQuery);   

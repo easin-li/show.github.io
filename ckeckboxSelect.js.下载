@@ -1,0 +1,50 @@
+(function($){  
+        $.extend({  
+            ckeckboxSelectAll: function(selectAllCheckboxSelector, selectCheckBoxArraySelector,doc){  
+                var selectAllCheckbox = selectAllCheckboxSelector;  
+                //var selectCheckBoxArray = $(selectCheckBoxArraySelector,doc);  
+                var $listTable = selectAllCheckbox.parents("table[class*='listTable']");
+                var selectCheckBoxArray = $listTable.find(selectCheckBoxArraySelector,doc); 
+                
+                selectAllCheckbox.bind('click', function(e){  
+                    selectCheckBoxArray.each(function(index, ck){  
+                        ck.checked = selectAllCheckbox[0].checked;  
+                    });  
+                });  
+                  
+                selectCheckBoxArray.bind('click', function(e){  
+                    var allChecked = true;  
+                    var allNotChecked = true;  
+                    selectCheckBoxArray.each(function(index, c){  
+                        if(c.checked){  
+                            allNotChecked = false;  
+                        }else{  
+                            allChecked = false;  
+                        }  
+                    });  
+                    var ck = selectAllCheckbox[0];  
+                    if(allChecked){  
+                        ck.checked = true;  
+                        ck.indeterminate = false;  
+                    }  
+                    else if(allNotChecked){  
+                        ck.checked = false;  
+                        ck.indeterminate = false;  
+                    }  
+                    else{  
+                        ck.indeterminate = true;  
+                    }  
+                                  
+                });  
+            }  
+        }); 
+        $.fn.selectcAll=function(doc){
+        	return this.each(function(){
+        		//alert($(this).val());
+        		//alert($(this).attr("id")+"     "+$(this).attr("selectGroup"));
+        		$.ckeckboxSelectAll($(this),"input[name='"+$(this).attr("selectGroup")+"']",doc);
+        	});
+        };
+        
+    })(jQuery);  
+  

@@ -1,0 +1,57 @@
+$(function() {
+	var pathID=location.pathname;
+	var secondMenu=parent.document.getElementById(pathID);
+	if(secondMenu){
+		parent.document.getElementById("li"+pathID).innerHTML="<a href='"+pathID+"' target='indexiframeName' rel='mright'  id='"+pathID+"'   onclick='secondMenu(this)'>"+secondMenu.innerHTML+"</a>";
+	}	
+	//$(".floatLayer,.submit-alert-btn").each(function(){
+	$(".floatLayer").each(function(){ 
+		$(this).on("click",function(){
+			load();
+		});
+	});
+
+	load(true);
+	
+	var row,columns = [],data = [];	
+	$(".scrollTable").find("thead:eq(0)").find("th").each(function(index,domEle){
+		var $this = $(this);
+		columns.push({
+            field: index,
+            title: $this.text(),
+            sortable: true
+        });
+	});
+	$(".scrollTable").find("tbody:eq(0)").find('tr').each(function(index1,domEle){
+		var $tr=$(this);
+		row = {};
+		$tr.find('td').each(function(index2,domEle){
+			row[index2] = $tr.find("td:eq("+index2+")").html();
+		});
+		data.push(row);
+	});
+	$(".scrollTable").bootstrapTable('destroy').bootstrapTable({
+        columns: columns,
+        data: data,
+        search: true,
+        toolbar: '.toolbar',
+        fixedColumns: true,
+        fixedNumber: 0
+});
+	
+	
+	
+});
+function load(flag){
+		var maskBg=parent.document.getElementById('background');
+		var dia=parent.document.getElementById('progressBar');	
+		if(null!=maskBg&&null!=dia){
+			 if(flag){
+				  maskBg.style.display ='none';
+				  dia.style.display ='none'; 
+			  }else{
+				  maskBg.style.display =(maskBg.style.display=='none') ?'block':'none';
+				  dia.style.display =(dia.style.display=='none') ?'block':'none';
+			  }
+		}		 
+}

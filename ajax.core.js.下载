@@ -1,0 +1,453 @@
+/**
+ *  定义公共属性及方法。
+ */
+var ISS={
+		/**
+		 * ajax 返回数据格式转换
+		 * @param data
+		 * @returns
+		 */
+		jsonEval:function(data) {
+			try{
+				if ($.type(data) == 'string')
+					return eval('(' + data + ')');
+				else return data;
+			} catch (e){
+				return {};
+			}
+		},
+		jsonToStr : function (o) {
+			var arr = [];
+			var fmt = function(s) {
+				if (typeof s == 'object' && s != null)
+					return json2str(s);
+				return /^(string|number)$/.test(typeof s) ? "'" + s + "'" : s;
+			};
+			for ( var i in o)
+				arr.push("'" + i + "':" + fmt(o[i]));
+			return '{' + arr.join(',') + '}';
+		},
+		/** 
+		 * ajax 请求错题信息提示
+		 * @param xhr
+		 * @param ajaxOptions
+		 * @param thrownError
+		 */
+		ajaxError:function(xhr, ajaxOptions, thrownError){
+			 
+			window.parent.jError("Http status: " + xhr.status + "  " + xhr.statusText + " " ,{
+				ShowOverlay : false,	
+				MinWidth:260,
+				VerticalPosition : 'center',
+				HorizontalPosition : 'center'
+			});
+			
+		},
+		/**
+		 * ajax 请求返回 状态 
+		 * 
+		 */
+		statusCode: {ok:200, error:300, timeout:301, forbidden:403},
+		/**
+		 * closeCurrent：  关闭 弹出窗口 重新加载弹出前页面，
+		 * 
+		 * forward：  关闭 并跳转
+		 * 
+		 * close：关闭弹出窗口　
+		 * …… 
+		 * **/
+		callbackType:{closeCurrent:"closeCurrent",forward:"forward",bringBack:"bringBack",close:"close"},
+		
+		/*add by zhangzongxiao 2015/04/18 begin*/
+		validateType:{selectNone:"selectNone",selectOne:"selectOne",selectMore:"selectMore"},
+		toggleType:{modal:"modal",ajax:"ajax"}
+		/*add by zhangzongxiao 2015/04/18 end*/ 
+};
+
+
+(function($){	
+	$.fn.extend({
+		/**
+		 * @param {Object} op: {type:GET/POST, url:ajax请求地址, data:ajax请求参数列表, callback:回调函数 }
+		 */
+		ajaxUrl: function(op){
+			var $this = $(this);
+			$.ajax({
+				type: op.method || 'GET',
+				url: op.url,
+				data: op.data,
+				cache: false,
+				success: function(response){
+					var json = ISS.jsonEval(response);
+					//判断返回状态
+					//回调其他函数
+					//弹出提示信息
+					//弹出浮动窗体
+					//改变页面 区域 1 改变页面 html 2 重新绑定事件
+					if ($.isFunction(op.callback)) op.callback(response);
+					
+					/**/
+					if(json.statusCode==ISS.statusCode.ok){
+						$(this).showMessage(json);
+						if (json.callbackType==ISS.callbackType.close){
+						 //  直接关闭 模态窗口	
+						}
+					    if (json.callbackType==ISS.callbackType.closeCurrent){
+							 window.location.reload(true);
+						}
+
+						if (json.callbackType==ISS.callbackType.forward){
+							
+							 window.location.href= json.forwardUrl;
+						}
+						if (json.callbackType==ISS.callbackType.bringBack){ // 带回
+							 //alert(json.forwardUrl);
+							 // 数据带回
+							 $.bringBack($this,json.data);
+						 }
+					}else{
+						$(this).showMessage(json);
+					}
+				},
+				error: ISS.ajaxError,
+				statusCode: {
+					503: function(xhr, ajaxOptions, thrownError) {
+						//alert(DWZ.msg("statusCode_503") || thrownError);
+						//setTimeout("cqc.unblockUI("+pageContent+"); ",6000);//
+					}
+				}
+			});
+		},	
+		loadUrl: function(url,data,callback){
+			$(this).load(url,data,function(e){
+				//提示信息				 
+				if ($.isFunction(callback)) callback(e);
+				 
+			});
+			//$(this).ajaxUrl({url:url, data:data, callback:callback});
+			//cqc.unblockUI(pageContent);
+		},
+		postUrl: function(url,data,callback){
+			$(this).ajaxUrl({url:url, data:data, callback:callback,method:"POST"});
+			//cqc.unblockUI(pageContent);
+		}
+		,
+		showTab:function(tabid, url, options){
+			$panel=$("#"+tabid);
+			 $panel.loadUrl(url,{"tab":tabid,"method":options.method,"formid":options.formid,"formobject":options.formobject},function(response){
+				 $panel.html(response);
+				 $panel.callback($panel);
+			 });
+		},
+		loadAttPage:function(tabid, url, options){
+			$panel=$("#"+tabid);
+			$panel.loadUrl(url,{"tab":tabid,"method":options.method,"formid":options.formid,"formobject":options.formobject},function(response){
+				$panel.html(response);
+				if ($.isFunction(options.callbackModal)) {
+					 options.callbackModal(response);
+				 }
+				 //$panel.callback($panel);
+			});
+		},
+//		callback:function(content){
+//			initContent(panel);
+//		},
+		/*add by zhangzongxiao 2015/04/18 begin*/
+		executeEvent:function(event){
+			var $this=$(this); 
+			//勾选列表记录校验
+			if($this.attr("data-validate")==ISS.validateType.selectNone){
+				if($this.attr("data-toggle") && $this.attr("data-toggle")==ISS.toggleType.modal){//弹出模态窗口
+					$this.modalsOpen(event);
+				}else if($this.attr("data-toggle") && $this.attr("data-toggle")==ISS.toggleType.ajax){//异步请求
+					$this.ajaxUrl({url:$this.attr("href")});
+				}else{//同步请求
+					window.location.href=$this.attr("href");
+				}
+			}else if($this.attr("data-validate")==ISS.validateType.selectOne){
+				if($this.selectOneValidate()){
+					if($this.attr("data-toggle") && $this.attr("data-toggle")==ISS.toggleType.modal){//弹出模态窗口
+						$this.modalsOpen(event);
+					}else if($this.attr("data-toggle") && $this.attr("data-toggle")==ISS.toggleType.ajax){//异步请求
+						$this.ajaxUrl({url:$this.replaceTmById()});
+					}else{//同步请求
+						window.location.href=$this.replaceTmById();
+					}
+				}
+			}else if($this.attr("data-validate")==ISS.validateType.selectMore){
+				if($this.selectMoreValidate()){
+					var href = $this.attr("href");
+					var $checkbox=$("table[class*=listTable] tbody input[type='checkbox']:checked");
+					var domArr=new Array();
+					$checkbox.each(function(){
+						if($(this).attr("data")){
+							domArr.push($(this).attr("data"));
+						}else{
+							domArr.push($(this).val());
+						}
+					});
+					var separate = "?";
+					if(href.indexOf("?")!=-1){
+						separate = "&";
+					}
+					var $dom=$checkbox.attr("name");
+					if($this.attr("data-toggle") && $this.attr("data-toggle")==ISS.toggleType.modal){//弹出模态窗口
+						$this.attr("href",href+separate+domArr);
+						$this.modalsOpen(event);
+					}else if($this.attr("data-toggle") && $this.attr("data-toggle")==ISS.toggleType.ajax){//异步请求
+						$this.ajaxUrl({url:href,data:$dom+"="+domArr});
+					}else{//同步请求
+						window.location.href=href+separate+$dom+"="+domArr;
+					}
+				}
+			}
+			event.preventDefault();
+		},
+		/*add by zhangzongxiao 2015/04/18 end*/
+    	//修改操作绑定修改事件
+    	editEvent:function(event){
+    	   var $this=$(this);
+		   if($this.attr("data-toggle")){
+			   //异步修改
+			   $this.modalsOpen(event);
+		   }else{
+			  var href=$this.replaceTmById();
+			  window.location.href=href;
+		   }
+	       event.preventDefault();
+    	},
+    	//修改操作绑定修改事件
+    	editsEvent:function(event){
+    		var $this = $(this);
+			var href = $this.attr("href");
+			var $checkbox=$("table[class*=listTable] tbody input[type='checkbox']:checked");
+    		var idArr="";
+    		
+			$checkbox.each(function(i){
+				if(i!=0){
+					idArr+="&";
+				}
+				//alert(idArr);
+				idArr+=$(this).attr("values");
+			});
+			var hrefUP=href+"?"+idArr;
+			idArr="";
+			//alert(href);
+			$this.attr("href",hrefUP);
+		   if($this.attr("data-toggle")){
+			   //异步修改
+			   $this.modalsOpen(event);
+		   }else{
+			   window.location.href=$this.attr("href");
+		   }
+		   $this.attr("href",href);
+	       event.preventDefault();
+    	},
+    	//删除操作绑定修改事件
+    	delEvent:function(event){
+    		var $this = $(this);
+			var href = $this.attr("href");
+			var $checkbox=$("table[class*=listTable] tbody input[type='checkbox']:checked");
+			var del=$checkbox.attr("name");
+    		var idArr=new Array();
+			$checkbox.each(function(){
+				idArr.push($(this).val());
+			});
+			window.location.href=href+"?"+del+"="+idArr;
+			event.preventDefault();
+    	},
+    	//异步删除操作绑定修改事件
+    	asyncDelEvent:function(event){
+    		var $this = $(this);
+    		var href = $this.attr("href");
+    		var $checkbox=$("table[class*=listTable] tbody input[type='checkbox']:checked");
+    		var del=$checkbox.attr("name");
+			var idArr=new Array();
+			$checkbox.each(function(){
+				idArr.push($(this).val());
+			});
+			$(this).ajaxUrl({url:href,data:del+"="+idArr});
+			event.preventDefault();
+    	},
+    	replaceTmById:function(){
+    		var $checkbox=$("table[class*=listTable] tbody input:checked");
+    		if(this.attr("href")){
+    			return this.attr("href").replace(RegExp("({[A-Za-z_]+[A-Za-z0-9_]*})","g"),function($1){
+  				  return $checkbox.attr($1.replace("{","").replace("}",""));
+    			});
+    		}
+		},
+		showMessage:function(json){
+			if (json.statusCode==ISS.statusCode.ok){
+				var message =json.message||"&nbsp;&nbsp;恭喜，操作成功！";
+				if(window.top == window.self){  
+				   jSuccess(message,{
+						ShowOverlay : false,	
+						MinWidth:260,
+						VerticalPosition : 'center',
+						HorizontalPosition : 'center'
+					});
+				}else{
+					window.parent.jSuccess(message,{
+						ShowOverlay : false,	
+						MinWidth:260,
+						VerticalPosition : 'center',
+						HorizontalPosition : 'center'
+					});
+				}
+			}
+			if (json.statusCode==ISS.statusCode.error){
+				var message =json.message||"&nbsp;&nbsp;操作失败！";
+				if(window.top == window.self){ 
+					jError(message,{
+						ShowOverlay : false,	
+						MinWidth:260,
+						VerticalPosition : 'center',
+						HorizontalPosition : 'center'
+					});
+				}else{
+					window.parent.jError(message,{
+						ShowOverlay : false,	
+						MinWidth:260,
+						VerticalPosition : 'center',
+						HorizontalPosition : 'center'
+					});
+				}
+			}
+		}
+	});
+	$.extend({
+		alert:function(msg){
+			jAlert(msg,{
+	 			//autoHide : false,
+				autoHide : true,
+				TimeShown : 2500, 	
+				ShowOverlay : false,	
+				MinWidth:260,
+				VerticalPosition : 'center',
+				HorizontalPosition : 'center'
+			});
+		},
+		confirm:function(msg,options){
+			var op = {autoHide:false,ShowOverlay:false,MinWidth:260,VerticalPosition:"center",HorizontalPosition:"center"};
+			$.extend(op, options);
+		    jConfirm(msg,op);
+		}
+	});
+})(jQuery);
+
+/*遮罩层显示*/
+function progressShow(){
+	  var ajaxbg;
+	  if(window.top == window.self){  
+		  ajaxbg=$("#background,#progressBar");
+	  }else{  
+		  ajaxbg=$("#background,#progressBar",parent.document);
+	  } 
+	  ajaxbg.show(); 
+};
+/*遮罩层隐藏*/
+function progressHide(){
+	  var ajaxbg;
+	  if(window.top == window.self){  
+		  ajaxbg=$("#background,#progressBar");
+	  }else{  
+		  ajaxbg=$("#background,#progressBar",parent.document);
+	  } 
+	  ajaxbg.hide(); 
+};
+
+function checktime(start,end){
+	var mark1,mark2,year1,year2,month1,month2,day1,day2;
+	filed1=start;
+	if(filed1 != null){
+		mark1=filed1.indexOf('-');
+		mark2=filed1.indexOf('-',mark1+1);
+		
+		year1 = parseInt(filed1.substring(0,mark1),10);
+		month1=parseInt(filed1.substring(mark1+1,mark2),10);
+		day1=parseInt(filed1.substring(mark2+1,filed1.length),10);
+	}
+	
+	filed2=end;
+	if(filed2 != null){
+		mark1=filed2.indexOf('-');
+		mark2=filed2.indexOf('-',mark1+1);
+		
+		year2 = parseInt(filed2.substring(0,mark1),10);
+		month2=parseInt(filed2.substring(mark1+1,mark2),10);
+		day2=parseInt(filed2.substring(mark2+1,filed2.length),10);
+	}
+
+	if ( year1>year2 ){
+		return false;
+	}
+	else if ( year1==year2 ) {
+		if ( month1>month2 ){
+			return false;
+		}
+		else if (month1==month2){
+			if ( day1>day2 ){
+				return false;
+			}
+		}
+	}
+	return true;
+}
+//查询输入日期是否大于当日
+function checkDay(compDate)
+{
+	var nowDate = new Date();//当日
+	var year = parseInt(compDate.substring(0,4), 10);
+	compDate = compDate.substring(5);// 
+	
+	var month= parseInt(compDate.substring(0,compDate.indexOf("-")), 10);
+	var day =parseInt(compDate.substring(compDate.indexOf("-")+1), 10);
+	
+	if(nowDate.getFullYear()<year)
+	{
+		return true;
+	}
+	if((nowDate.getMonth()+1)<month)
+	{
+		return true;
+	}
+	if(nowDate.getDate()<day)
+	{
+		return true;
+	}
+	
+	return false;
+}
+//查询输入日期是否大于当日
+function checkDayAfterNow(compDate)
+{
+	var nowDate = new Date();
+	var year = parseInt(compDate.substring(0,4), 10);
+	compDate = compDate.substring(5);
+	
+	var month = parseInt(compDate.substring(0,compDate.indexOf("-")), 10);
+	var day = parseInt(compDate.substring(compDate.indexOf("-")+1), 10);
+	
+	if(year > nowDate.getFullYear())
+	{
+		return true;
+	}
+	if(year == nowDate.getFullYear())
+	{
+		if(month>(nowDate.getMonth()+1))
+		{
+			return true;
+		}
+		if(month==(nowDate.getMonth()+1))
+		{
+			if(day>nowDate.getDate())
+			{
+				return true;
+			}
+		}
+		
+	}
+	
+	return false;
+}

@@ -1,0 +1,236 @@
+(function($){
+    $.fn.formValidate=FormValidate;
+     function FormValidate(){
+    	 
+    	  return this.each(function(){
+    		  var custFlag = $(this).attr("data-validate");
+    		  //console.log(custFlag);
+    		  if("custom" != custFlag){
+    			  //console.log("Hi, I am do common validate" + custFlag);
+    			  $(this).validate({
+  	 					submitHandler : function(form) {
+  	 						handlerSub(form);
+  	 					}     
+	   			  });
+	      		  $("form",parent.document).each(function(){
+	      			$(this).validate({
+	  	    	 		 submitHandler : function(form) { 
+	  	    	 			 handlerSub(form);
+	  	    	 		 }     
+      	 			});
+	      		  });  
+    		  }
+    	  });
+    }
+    $.fn.extend({
+    	
+    	
+    	/*add by zhangzongxiao 2015/04/18 begin*/
+    	selectOneValidate:function(){
+    		var $checkbox=$("table[class*=listTable] tbody input:checked");
+    		var jerrorMessage="";
+    		var local = $("#localLanguage").val();
+    		if(local=='zh_CN'||local==null){
+    			jerrorMessage="请选择记录！";
+    		}else{
+    			jerrorMessage="please select one record！";
+    		}
+			if($checkbox.size()==0){
+				jError("&nbsp;&nbsp;"+jerrorMessage,{
+					ShowOverlay : false,	
+					MinWidth:260,
+					VerticalPosition : 'center',
+					HorizontalPosition : 'center'
+				});
+				return false;
+			}else if($checkbox.size()>1){
+				if(local=='zh_CN'||local==null){
+					jError("&nbsp;&nbsp;只能选中一条记录！",{
+						ShowOverlay : false,	
+						MinWidth:260,
+						VerticalPosition : 'center',
+						HorizontalPosition : 'center'
+					});
+				}else{
+					jError("&nbsp;&nbsp;can only select one record！",{
+						ShowOverlay : false,	
+						MinWidth:260,
+						VerticalPosition : 'center',
+						HorizontalPosition : 'center'
+					});
+				}
+				
+				return false;
+			}
+		    return true;
+    	},
+    	selectMoreValidate:function(){
+    		var $checkbox=$("table[class*=listTable] tbody input[type='checkbox']:checked");
+    		var jerrorMessage="";
+    		var local = $("#localLanguage").val();
+    		if(local=='zh_CN'||local==null){
+    			jerrorMessage="请选择记录！";
+    		}else{
+    			jerrorMessage="please select one record！";
+    		}
+			if($checkbox.size()==0){
+				jError("&nbsp;&nbsp;"+jerrorMessage,{
+					ShowOverlay : false,	
+					MinWidth:260,
+					VerticalPosition : 'center',
+					HorizontalPosition : 'center'
+				});
+				return false;
+			}
+			return true;
+    	},
+    	/*add by zhangzongxiao 2015/04/18 end*/
+    	
+    	
+    	//修改校验
+    	editValidate:function(){
+    		var $checkbox=$("table[class*=listTable] tbody input[type='checkbox']:checked");
+    		var jerrorMessage="";
+    		var local = $("#localLanguage").val();
+    		if(local=='zh_CN'||local==null){
+    			jerrorMessage="请选择记录！";
+    		}else{
+    			jerrorMessage="please select one record！";
+    		}
+			if($checkbox.size()==0){
+				jError("&nbsp;&nbsp;"+jerrorMessage,{
+					ShowOverlay : false,	
+					MinWidth:260,
+					VerticalPosition : 'center',
+					HorizontalPosition : 'center'
+				});
+				return false;
+			}else if($checkbox.size()>1){
+				if(local=="zh_CN"||local==null){
+					jError("&nbsp;&nbsp;只能选中一条记录！",{
+						ShowOverlay : false,	
+						MinWidth:260,
+						VerticalPosition : 'center',
+						HorizontalPosition : 'center'
+					});
+				}else{
+					jError("&nbsp;&nbsp;can only select one record！",{
+						ShowOverlay : false,	
+						MinWidth:260,
+						VerticalPosition : 'center',
+						HorizontalPosition : 'center'
+					});
+				}
+				return false;
+			}
+		    return true;
+    	},
+    	//删除校验
+    	delValidate:function(){
+    		var $checkbox=$("table[class*=listTable] tbody input[type='checkbox']:checked");
+    		var jerrorMessage="";
+    		var local = $("#localLanguage").val();
+    		if(local=='zh_CN'||local==null){
+    			jerrorMessage="请选择记录！";
+    		}else{
+    			jerrorMessage="please select one record！";
+    		}
+			if($checkbox.size()==0){
+				jError("&nbsp;&nbsp;"+jerrorMessage,{
+					ShowOverlay : false,	
+					MinWidth:260,
+					VerticalPosition : 'center',
+					HorizontalPosition : 'center'
+				});
+				return false;
+			}
+			return true;
+    	}
+    });
+    
+    
+    
+	
+})(jQuery);   
+
+function handlerSub(form){
+	var tar = $(form).attr("target");
+	var url =$(form).attr("action");
+	var load=$(form).attr("load");
+	//判断页面是否需要业务逻辑验证
+	var submitCheck = $(form).attr("onsubmitCheck");
+	if(submitCheck){
+		var $handler = eval(submitCheck);
+		//若逻辑验证不通过则return
+		if(!$handler){
+			return;
+		}
+	}
+
+
+	/*
+	var maskBg=parent.document.getElementById('background');
+	var dia=parent.document.getElementById('progressBar');	
+	if(null!=maskBg&&null!=dia){
+	  maskBg.style.display =(maskBg.style.display=='none') ?'block':'none';
+	  dia.style.display =(dia.style.display=='none') ?'block':'none';
+	}		 
+   /*
+    * 2016.9.22 end 
+    * */
+	
+	
+	if(tar=='ajax'){
+		
+		$(form).postUrl(url,$(form).serializeArray(), function(response){
+			
+			 if($.fn.modalsClose)$($(form).parents("div[role='dialog']").first()).modalsClose();
+			 if(load){
+				var Obj = ISS.jsonEval(load);	 
+				//alert(Obj);
+				 if(Obj.id&&Obj.url){ $(Obj.id).loadUrl(Obj.url,Obj.data,Obj.callback);
+				 } else if ($.isFunction(Obj.callback)) Obj.callback(response);
+				
+			 }
+			 
+		});
+		
+	}else  if (tar=='modal'){
+		$(form).parents("div[role='dialog']").first().find('.modal-content').load(url, $(form).serializeArray(),
+			function() {
+				// 多选框绑定单选带回事件
+				if ($.fn.bringSelect)$("input[bringBack^='bring']", parent.document).bringSelect();
+				var doc;     
+		  		if(window.top == window.self){  
+		  			  doc=document;    
+		  		  }else{  
+		  			  doc=parent.document;  
+		  		  } 
+				initContent(doc);
+			});
+	}else if(tar=='ajaxQuery'){
+				$("#"+load).loadUrl(url,$(form).serializeArray());
+		
+	}else {
+		/*
+		 * 2016.9.22 Bell修改,把原使用对提交按钮disabled方式,改为弹出遮罩层的方式
+		 * */
+		//表单提交后将按钮置为disabled
+		var submitBtn=$(form).find("button[class*=submit-alert-btn]");
+		var local = $("#localLanguage").val();
+		var messageWait = "";
+		if(local == 'en_US'){
+			messageWait = 'Please wait...';
+		}else{
+			messageWait = '请稍等...';
+		}
+		if(submitBtn){
+				submitBtn.text(messageWait);
+				/*如果是查询界面,提交分页查询的form,则把页号置为1*/
+				if($(form).find("#pageNum")){$(form).find("#pageNum").val("1");}
+				submitBtn.attr("disabled",true);
+		
+		}
+		form.submit();
+	}
+}

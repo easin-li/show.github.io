@@ -1,0 +1,167 @@
+(function($){
+	$.extend({
+		setMultiVal: function($this,data){ // 多选带回处理，带回的值以 逗号【，】分割。 存放到父页面的一个input 元素中
+			var lookName=$this.parents("div[role='dialog']").first().attr("lookupgroup")||'';
+			var inputLookObj="input[name]";
+			if(lookName!=''){
+				inputLookObj="input[name^='"+lookName+"']";
+			}
+			$(inputLookObj).each(function(){
+				var $this=$(this), $name=$this.attr("name"), look=$name.replace(lookName+".", "");
+				var value="";
+				for(var j = 0 ;j < data.length;j++){
+					var item = data[j];
+					for (var key in item) {
+						if (key == look) {
+							value += $.trim(item[key]);
+							if(j != (data.length -1)){
+								value += ",";
+							}
+						}
+					}
+				}
+				$this.val(value);
+			});
+		},
+		
+		bringBack :function($this,data){ // 直接带回
+			
+			var lookName=$this.parents("div[role='dialog']").first().attr("lookupgroup");
+			var spanLookObj="span[name]";
+			if(lookName!=''){
+				spanLookObj="span[name^='"+lookName+"']";
+			}
+			$(spanLookObj).each(function(){
+				var $this=$(this), $name=$this.attr("name"), look=$name.replace(lookName+".", "");
+				
+				for (var key in data) {
+					if (key == look) {
+						$this.text($.trim(data[key]));
+					}
+				}
+			});
+		},
+		bringBackClose :function($this,data){ // 直接带我
+			//alert(data);
+			var lookName=$this.parents("div[role='dialog']").first().attr("lookupGroup")||'';
+			//alert(lookName);
+			var spanLookObj="span[name]";
+			if(lookName!=''){
+				spanLookObj="span[name^='"+lookName+"']";
+			}
+			$(spanLookObj).each(function(){
+				var $this=$(this), $name=$this.attr("name"), look=$name.replace(lookName+".", "");
+				
+				for (var key in data) {
+					if (key == look) {
+						$this.text($.trim(data[key]));
+					}
+				}
+			});
+			
+			var inputLookObj="input[name]";
+			if(lookName!=''){
+			 inputLookObj="input[name^='"+lookName+"']";
+			}
+			$(inputLookObj).each(function(){
+				var $this=$(this), $name=$this.attr("name"), look=$name.replace(lookName+".", "");
+				for (var key in data) {
+					if (key == look) {
+						//$this.val(data[key].trim());
+						
+						$this.val($.trim(data[key]));		//bug651  update by hujiansen
+						
+						if("areaCode" == look){
+							//console.log(data[key]);
+							//TODO 修改省市县的置
+							$this.closest("ul.proAndCounty-area").Address({ proid: $.trim(data[key]).substring(2,0)+"0000", cityid: $.trim(data[key]).substring(4,0)+"00", areaid: $.trim(data[key])});
+						}
+					}
+				}
+			});
+		} 
+	});
+	
+	$.fn.bringSelect=function(doc){
+    	return this.each(function(){
+			$(this).click(function(){
+				var bringBack=$(this).attr("bringBack");
+				var dataStr ="{";
+				$(this).parents("div[role='dialog']").first().find("["+bringBack+"]").each(function(i){
+        			if(i!=0){
+        				dataStr+=",";	
+        			}
+        			dataStr+=$(this).attr(bringBack)+":'"+$(this).text().replace(/[\s*\n\r\']+/g," ")+"'";
+        		});
+        		dataStr+="}";
+        		var data = ISS.jsonEval(dataStr);
+				$.bringBackClose($(this),data);
+				// 关闭 弹出窗口
+				if($.fn.modalsClose)$($(this).parents("div[role='dialog']").first()).modalsClose();
+			});
+    	});
+    };
+    //多选带回处理
+    $.fn.bringMulti = function(doc){
+    	return this.click(function(){
+    		var $selected = $("input:checkbox:checked",parent.document);
+    		var dataJson = "[";
+    		$selected.each(function(_index){
+    			var $model = $(this);
+    			if(_index !=0){
+    				dataJson +=",";
+    			}
+    			dataJson +="{";
+    			$model.closest("tr").find("[bringBack]").each(function(_i){
+    				var $item = $(this);
+    				if(_i != 0){
+    					dataJson +=",";
+    				}
+    				dataJson += $item.attr("bringBack")+":'"+$item.text().replace(/[\s*\n\r]+/g," ")+"'";
+    			});
+    			dataJson +="}";
+    		});
+    		dataJson +="]";
+    		var data = ISS.jsonEval(dataJson);
+			$.setMultiVal($(this),data);
+			if($.fn.modalsClose)$($(this).parents("div[role='dialog']").first()).modalsClose();
+    	});
+    };
+    
+    //若需要将带回的数据进行特殊处理
+    $.fn.bringMultiOfHandle = function(doc){
+    	return this.click(function(){
+    		var $selected = $("input:checkbox:checked",parent.document);
+    		var dataJson = "[";
+    		$selected.each(function(_index){
+    			var $model = $(this);
+    			if(_index !=0){
+    				dataJson +=",";
+    			}
+    			dataJson +="{";
+    			$model.closest("tr").find("[bringBack]").each(function(_i){
+    				var $item = $(this);
+    				if(_i != 0){
+    					dataJson +=",";
+    				}
+    				dataJson += $item.attr("bringBack")+":'"+$item.text().replace(/[\s*\n\r]+/g," ")+"'";
+    			});
+    			dataJson +="}";
+    		});
+    		dataJson +="]";
+    		var data = ISS.jsonEval(dataJson);
+			//将选中的数据组织成json格式传进function进行处理
+    		var precall = eval($(this).attr("bringCall"));
+			if($.isFunction(precall)){
+				precall(data);
+			}
+			if($.fn.modalsClose)$($(this).parents("div[role='dialog']").first()).modalsClose();
+    	});
+    };
+})(jQuery);   
+
+
+
+
+
+  
